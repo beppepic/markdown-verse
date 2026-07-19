@@ -6,7 +6,9 @@ Verse depends on authored line and stanza boundaries. Existing workarounds prese
 
 ## Live demo
 
-Open [`index.html`](index.html) in a browser. The demo is self-contained and has no build step or external dependencies.
+Try the [live interactive demo](https://beppepic.github.io/markdown-verse/).
+
+To run it locally, open [`index.html`](index.html) in a browser. The demo is self-contained and has no build step or external dependencies.
 
 The source pane is editable. It includes examples of verse inside prose, regular and free verse, short lines, intentional whitespace, long-line wrapping, optical centering, and hanging indents.
 
