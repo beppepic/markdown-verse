@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Semantic Verse in Markdown — Prototype</title>
+<style>
+  :root {
+    --paper: #f6f3ec;
+    --ink: #2b2620;
+    --ink-soft: #6b6355;
+    --rule: #ddd5c4;
+    --accent: #8a6d4a;
+    --mono-bg: #ece7da;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --mono: "SF Mono", "Menlo", "Consolas", monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--serif);
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .app {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  @media (max-width: 800px) {
+    body { height: auto; }
+    .app {
+      grid-template-columns: 1fr;
+      grid-template-rows: minmax(380px, 1fr) minmax(380px, 1fr);
+    }
+  }
+
+  .pane {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .pane + .pane {
+    border-left: 1px solid var(--rule);
+  }
+
+  @media (max-width: 800px) {
+    .pane + .pane { border-left: none; border-top: 1px solid var(--rule); }
+  }
+
+  .pane-header {
+    padding: 14px 20px 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .pane-header .hint {
+    font-family: var(--serif);
+    text-transform: none;
+    letter-spacing: 0;
+    font-style: italic;
+    font-size: 12px;
+  }
+
+  textarea {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    border: none;
+    resize: none;
+    padding: 20px;
+    font-family: var(--mono);
+    font-size: 14.5px;
+    line-height: 1.6;
+    background: var(--mono-bg);
+    color: var(--ink);
+    outline: none;
+  }
+
+  textarea:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--accent);
+  }
+
+  .preview {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 36px 32px;
+  }
+
+  .preview :is(h1, h2, h3) {
+    font-family: var(--serif);
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0.9em 0 0.3em;
+  }
+
+  .preview p {
+    line-height: 1.6;
+    margin: 0 0 1em;
+  }
+
+  .verse {
+    margin: 1.6em 0;
+    font-family: var(--serif);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .verse.optical-off {
+    width: auto !important;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .verse .stanza {
+    margin-bottom: 1em;
+  }
+
+  .verse .stanza:last-child {
+    margin-bottom: 0;
+  }
+
+  .verse .vline {
+    display: block;
+    line-height: 1.55;
+    font-size: 17px;
+    color: var(--ink);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  .verse.hanging .vline {
+    padding-left: 1.4em;
+    text-indent: -1.4em;
+  }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    align-items: center;
+    padding: 12px 20px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+    background: var(--paper);
+  }
+
+  .toolbar label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+
+  .toolbar input[type="checkbox"] {
+    accent-color: var(--accent);
+  }
+
+  .title-bar {
+    padding: 18px 24px 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .title-bar .sub {
+    display: block;
+    font-family: var(--serif);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 20px;
+    color: var(--ink);
+    margin-top: 4px;
+    font-style: italic;
+  }
+
+  .demo-note {
+    padding: 10px 20px 14px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    background: var(--paper);
+  }
+
+  .example-button {
+    appearance: none;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: var(--accent);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .example-button:hover,
+  .example-button:focus-visible {
+    text-decoration: underline;
+  }
+
+  .example-button:focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+</style>
+</head>
+<body>
+
+<header class="title-bar">
+  Semantic Verse in Markdown
+  <span class="sub">Exploring a semantic verse block for Markdown.</span>
+</header>
+
+<main class="app">
+  <section class="pane" aria-labelledby="source-heading">
+    <div class="pane-header">
+      <span id="source-heading">Markdown source</span>
+      <span class="hint">edit me</span>
+    </div>
+    <nav class="toolbar" id="examples-toolbar" aria-label="Demo examples" style="border-top:none; border-bottom:1px solid var(--rule);">
+      <label style="cursor:default;">Load example:</label>
+      <button class="example-button" type="button" data-example="mixed">Prose + verse</button>
+      <button class="example-button" type="button" data-example="sonnet">Regular verse</button>
+      <button class="example-button" type="button" data-example="whitman">Free verse</button>
+      <button class="example-button" type="button" data-example="short">Short lines</button>
+      <button class="example-button" type="button" data-example="whitespace">Intentional whitespace</button>
+      <button class="example-button" type="button" data-example="dante">Dante</button>
+      <button class="example-button" type="button" data-example="stress">Stress test</button>
+      <button class="example-button" type="button" data-example="all">All examples</button>
+    </nav>
+    <label class="visually-hidden" for="source">Editable Markdown source</label>
+    <textarea id="source" spellcheck="false" aria-describedby="source-help"></textarea>
+    <span class="visually-hidden" id="source-help">Edit the Markdown to update the rendered preview.</span>
+  </section>
+  <section class="pane" aria-labelledby="preview-heading">
+    <div class="pane-header">
+      <span id="preview-heading">Rendered output</span>
+    </div>
+    <div class="toolbar" style="border-top:none; border-bottom:1px solid var(--rule);">
+      <label><input type="checkbox" id="optical" checked> Optical centering</label>
+      <label><input type="checkbox" id="hanging" checked> Hanging indent for wrapped lines</label>
+    </div>
+    <div class="preview" id="preview" aria-label="Rendered Markdown preview"></div>
+    <div class="demo-note">The rendering shown here is illustrative only. The proposal concerns semantic representation, not presentation.</div>
+  </section>
+</main>
+
+<script>
+const sourceEl = document.getElementById('source');
+const previewEl = document.getElementById('preview');
+const opticalEl = document.getElementById('optical');
+const hangingEl = document.getElementById('hanging');
+const examplesToolbarEl = document.getElementById('examples-toolbar');
+
+// Minimal inline Markdown: **bold**, *italic*, \`code\`
+function inline(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code>$1</code>');
+}
+
+function renderVerseBlock(raw) {
+  const stanzas = raw.replace(/^\n+|\n+$/g, '').split(/\n\s*\n/);
+
+  const html = stanzas.map(stanza => {
+    const lines = stanza.split('\n').map(line =>
+      `<span class="vline">${inline(line.replace(/\r$/, ''))}</span>`
+    );
+    return `<p class="stanza">${lines.join('\n')}</p>`;
+  }).join('\n');
+
+  return `<div class="verse">\n${html}\n</div>`;
+}
+
+function renderDoc(src) {
+  const lines = src.split('\n');
+  let out = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (/^```verse\s*$/.test(line)) {
+      let buf = [];
+      i++;
+      while (i < lines.length && !/^```\s*$/.test(lines[i])) {
+        buf.push(lines[i]);
+        i++;
+      }
+
+      // If the closing fence is missing, render the collected text anyway
+      // instead of advancing beyond the end of the document.
+      if (i < lines.length) i++;
+
+      out.push(renderVerseBlock(buf.join('\n')));
+      continue;
+    }
+
+    if (/^#\s+/.test(line)) {
+      out.push(`<h1>${inline(line.replace(/^#\s+/, ''))}</h1>`);
+      i++;
+      continue;
+    }
+    if (/^##\s+/.test(line)) {
+      out.push(`<h2>${inline(line.replace(/^##\s+/, ''))}</h2>`);
+      i++;
+      continue;
+    }
+
+    if (/^---\s*$/.test(line)) {
+      out.push('<hr>');
+      i++;
+      continue;
+    }
+
+    if (line.trim() === '') { i++; continue; }
+
+    // plain paragraph: gather until blank line or fence
+    let buf = [line];
+    i++;
+    while (
+      i < lines.length &&
+      lines[i].trim() !== '' &&
+      !/^```/.test(lines[i]) &&
+      !/^#{1,2}\s/.test(lines[i]) &&
+      !/^---\s*$/.test(lines[i])
+    ) {
+      buf.push(lines[i]);
+      i++;
+    }
+    out.push(`<p>${inline(buf.join(' '))}</p>`);
+  }
+  return out.join('\n');
+}
+
+function measureTextWidth(text, font) {
+  measureTextWidth.canvas = measureTextWidth.canvas || document.createElement('canvas');
+  const ctx = measureTextWidth.canvas.getContext('2d');
+  ctx.font = font;
+  return ctx.measureText(text).width;
+}
+
+function applyOpticalWidth(verseEl) {
+  const vlines = verseEl.querySelectorAll('.vline');
+  if (!vlines.length) return;
+
+  const sample = getComputedStyle(vlines[0]);
+  const font = `${sample.fontStyle} ${sample.fontWeight} ${sample.fontSize} ${sample.fontFamily}`;
+
+  const previewStyle = getComputedStyle(previewEl);
+  const horizontalPadding = parseFloat(previewStyle.paddingLeft) + parseFloat(previewStyle.paddingRight);
+  const available = Math.max(0, previewEl.clientWidth - horizontalPadding);
+  if (!available) return;
+
+  const widths = Array.from(vlines).map(v => measureTextWidth(v.textContent, font));
+  const fitting = widths.filter(w => w <= available);
+  // reference = longest line that actually fits; lines beyond that must turn over regardless
+  const measure = fitting.length ? Math.max(...fitting) : available;
+
+  // small buffer so the exact matching line doesn't wrap due to sub-pixel rounding,
+  // but never exceed the actually available space
+  verseEl.style.width = Math.min(available, Math.ceil(measure + 2)) + 'px';
+}
+
+function applyPresentation() {
+  previewEl.querySelectorAll('.verse').forEach(verse => {
+    verse.classList.toggle('optical-off', !opticalEl.checked);
+    verse.classList.toggle('hanging', hangingEl.checked);
+    if (opticalEl.checked) {
+      applyOpticalWidth(verse);
+    } else {
+      verse.style.width = '';
+    }
+  });
+}
+
+function render() {
+  previewEl.innerHTML = renderDoc(sourceEl.value);
+  applyPresentation();
+}
+
+let presentationFrame = 0;
+function schedulePresentation() {
+  cancelAnimationFrame(presentationFrame);
+  presentationFrame = requestAnimationFrame(applyPresentation);
+}
+
+sourceEl.addEventListener('input', render);
+opticalEl.addEventListener('change', applyPresentation);
+hangingEl.addEventListener('change', applyPresentation);
+window.addEventListener('resize', schedulePresentation);
+
+if ('ResizeObserver' in window) {
+  const previewResizeObserver = new ResizeObserver(schedulePresentation);
+  previewResizeObserver.observe(previewEl);
+}
+
+if (document.fonts) {
+  document.fonts.ready.then(schedulePresentation);
+}
+
+const SONNET_18 = `# Sonnet 18
+
+William Shakespeare — a regular, end-stopped structure: good baseline test.
+
+\`\`\`verse
+Shall I compare thee to a summer's day?
+Thou art more lovely and more temperate:
+Rough winds do shake the darling buds of May,
+And summer's lease hath all too short a date:
+
+Sometime too hot the eye of heaven shines,
+And often is his gold complexion dimm'd;
+And every fair from fair sometime declines,
+By chance, or nature's changing course, untrimm'd:
+
+But thy eternal summer shall not fade,
+Nor lose possession of that fair thou ow'st;
+Nor shall death brag thou wander'st in his shade,
+When in eternal lines to time thou grow'st:
+
+So long as men can breathe, or eyes can see,
+So long lives this, and this gives life to thee.
+\`\`\`
+`;
+
+const WHITESPACE = `# Intentional whitespace
+
+An original regression fixture for leading and repeated spaces.
+
+\`\`\`verse
+The first line begins at the ordinary edge.
+     This line begins with five intentional spaces.
+Two words     hold     their distance.
+
+  A new stanza begins with two spaces.
+Its second line returns to the edge.
+\`\`\`
+`;
+
+const DANTE = `# Inferno, Canto I
+
+Dante Alighieri — regular hendecasyllabic verse, preserved as written.
+
+\`\`\`verse
+Nel mezzo del cammin di nostra vita
+mi ritrovai per una selva oscura,
+ché la diritta via era smarrita.
+
+Ahi quanto a dir qual era è cosa dura
+esta selva selvaggia e aspra e forte
+che nel pensier rinova la paura,
+tant'è amara che poco è più morte.
+\`\`\`
+`;
+
+const WHITMAN = `# Song of Myself (1892 version)
+
+Walt Whitman — naturally long free verse and uneven stanza lengths.
+
+\`\`\`verse
+I celebrate myself, and sing myself,
+And what I assume you shall assume,
+For every atom belonging to me as good belongs to you.
+
+I loafe and invite my soul,
+I lean and loafe at my ease observing a spear of summer grass.
+
+My tongue, every atom of my blood, form’d from this soil, this air,
+Born here of parents born here from parents the same, and their parents the same,
+I, now thirty-seven years old in perfect health begin,
+Hoping to cease not till death.
+
+Creeds and schools in abeyance,
+Retiring back a while sufficed at what they are, but never forgotten,
+I harbor for good or bad, I permit to speak at every hazard,
+Nature without check with original energy.
+\`\`\`
+`;
+
+const SHORT_LINES = `# Short-line test
+
+An original narrow verse block arranged as three two-line stanzas.
+
+\`\`\`verse
+Rain at the sill
+waits
+
+one silver bead
+then falls
+
+night keeps
+the echo
+\`\`\`
+`;
+
+const MIXED = `# Verse quoted inside prose
+
+Markdown prose can continue naturally before and after a semantic verse block.
+
+The old notebook contained only these lines:
+
+\`\`\`verse
+I celebrate myself, and sing myself,
+And what I assume you shall assume,
+For every atom belonging to me as good belongs to you.
+\`\`\`
+
+Nobody knew who had copied them there, or why the page had been preserved.
+
+The point of this example is structural rather than visual: the embedded text is verse, not source code and not a block quotation.
+`;
+
+const STRESS = `# Renderer Stress Test
+
+Synthetic example exercising edge cases without altering a literary text.
+
+\`\`\`verse
+Short.
+A normal verse line.
+This is the longest line that still fits completely inside the available rendering area.
+
+This is an intentionally very long verse line designed to exceed the available width of the rendering area so that it wraps onto a second visual line while leaving the optical width of the poem unchanged.
+
+     This line begins with five intentional spaces.
+This     line     contains     multiple     intentional     spaces.
+
+SupercalifragilisticexpialidociousSupercalifragilisticexpialidociousSupercalifragilisticexpialidocious
+
+Last line.
+\`\`\`
+`;
+
+const ALL_EXAMPLES = `${MIXED}
+---
+
+${SONNET_18}
+---
+
+${WHITMAN}
+---
+
+${SHORT_LINES}
+---
+
+${WHITESPACE}
+---
+
+${DANTE}
+---
+
+${STRESS}`;
+
+const EXAMPLES = {
+  mixed: MIXED,
+  sonnet: SONNET_18,
+  whitman: WHITMAN,
+  short: SHORT_LINES,
+  whitespace: WHITESPACE,
+  dante: DANTE,
+  stress: STRESS,
+  all: ALL_EXAMPLES
+};
+
+examplesToolbarEl.addEventListener('click', event => {
+  const button = event.target.closest('[data-example]');
+  if (!button) return;
+  sourceEl.value = EXAMPLES[button.dataset.example];
+  render();
+});
+
+sourceEl.value = ALL_EXAMPLES;
+render();
+</script>
+
+</body>
+</html>
