@@ -151,20 +151,14 @@
     line-height: 1.55;
     font-size: 17px;
     color: var(--ink);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
     word-break: normal;
   }
 
-  .verse .vline-content {
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-  }
-
   .verse.hanging .vline {
-    padding-inline-start: 1.4em;
-  }
-
-  .verse.hanging .vline-content {
-    margin-inline-start: -1.4em;
+    padding-left: 1.4em;
+    text-indent: -1.4em;
   }
 
   .toolbar {
@@ -320,7 +314,7 @@ function renderVerseBlock(raw) {
 
   const html = stanzas.map(stanza => {
     const lines = stanza.split('\n').map(line =>
-      `<span class="vline"><span class="vline-content">${inline(line.replace(/\r$/, ''))}</span></span>`
+      `<span class="vline">${inline(line.replace(/\r$/, ''))}</span>`
     );
     return `<p class="stanza">${lines.join('\n')}</p>`;
   }).join('\n');
