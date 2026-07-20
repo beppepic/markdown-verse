@@ -43,8 +43,11 @@
     body { height: auto; }
     .app {
       grid-template-columns: 1fr;
-      grid-template-rows: minmax(380px, 1fr) minmax(380px, 1fr);
+      grid-template-rows: minmax(380px, 55vh) auto;
+      grid-template-rows: minmax(380px, 55svh) auto;
     }
+
+    .preview { overflow-y: visible; }
   }
 
   .pane {
